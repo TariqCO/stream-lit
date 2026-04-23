@@ -45,24 +45,19 @@ elif select == "Player Analysis":
     player = st.selectbox("Select Player", df["Player"])
 
     pdata = df[df["Player"]==player]
+    pdata = pdata[["Matches", "innings", "Runs", "High_score", "Strike_rate", "100","50","6s","4s"]]
+    transposeData = pdata.T.reset_index()
 
-    stats=["100","50","4s","6s"]
+    st.dataframe(transposeData)
 
-    chart_data = (
-        pdata[stats].iloc[0].reset_index()
+
+    fig = px.bar(
+        transposeData,
+        x= "index",
+        y= transposeData.columns[1],
+        color="index"
     )
-
-    chart_data.columns = ["Stat","Value"]
-
-    fig=px.bar(
-        chart_data,
-        x="Stat",
-        y="Value"
-       
-    )
-
-    st.plotly_chart(fig,use_container_width=True)
-
+    st.plotly_chart(fig, use_container_width=True)
 
 
 #-----------Country------------
@@ -72,10 +67,20 @@ elif select == "Country Insights":
     st.title("Country Insights")
 
     country_runs = df.groupby("Country")["Runs"].sum().reset_index()
-
     fig= px.pie(country_runs,names="Country",values="Runs")
-
     st.plotly_chart(fig,use_container_width=True)
+
+    country_select = st.selectbox("Select Country", df["Country"].unique())
+    cData = df[df["Country"] == country_select]
+
+    fig_runs = px.pie(
+       cData,
+       names="Player",
+       values="Runs",
+       color="Player" 
+    )
+
+    st.plotly_chart(fig_runs , use_container_width=True)
 
 
 #-------------Comparison----------------
