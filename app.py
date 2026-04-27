@@ -1,110 +1,117 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from streamlit_option_menu import option_menu #navbar
-st.set_page_config(layout="wide") #
-st.title("Cric info app")
-#loading Data
-df=pd.read_csv("newfile.csv")
+import streamlit_option_menu as stm
 
-#---------NAVBAR------------#
+st.set_page_config(layout='wide')
 
-select = option_menu(
+st.title("Ecommerce Dashboard")
+
+df = pd.read_excel("./newData.xlsx")
+
+select = stm.option_menu(
     menu_title=None,
-    options=["Home","Player Analysis","Country Insights","Comparison",
-             "Data Explorer"],
-    icons=["house","person","globe","bar-chart","table"],
+    options=["Home","Products","City"],
+    icons=["house","cart","globe"],
     orientation="horizontal"
-
 )
 
 
-##-----------------Home--------------
-
 if select == "Home":
 
-    st.title("Cricket Analysis Dashboard")
+    st.header("Key Performance Indicator (KPI's)")
+    col1, col2, col3, col4 ,col5= st.columns(5)
+    col1.metric("Total Cities", df["City"].nunique())
+    col2.metric("Total States", df["State"].nunique())
+    col3.metric("Total Categories", df["Category"].nunique())
+    col4.metric("Total Customers", df["Customer ID"].nunique())
+    col5.metric("Total Sales", df["Sales"].sum().round(2))
+   
 
-    col1,col2,col3 = st.columns(3)
+    st.header("Business Charts")
 
-    col1.metric("Total Players", df["Player"].nunique())
+    year_sales = df.groupby("Year")["Sales"].sum().sort_values().reset_index()
 
-    col2.metric("Total Runs", df["Runs"].sum())
+    fig_year = px.bar(
+        year_sales,
+        x="Year",
+        y="Sales",
+        color="Year",
+        title="Sales by Years"
+    )
 
-    col3.metric("Countries", df["Country"].nunique())
+    st.plotly_chart(fig_year, use_container_width=True)
+
+    col1,col2 = st.columns(2)
+
+    product_sales = df.groupby("Sub-Category")["Sales"].sum().sort_values(ascending=False).reset_index().head()
+
+    fig_product = px.pie(
+       product_sales,
+       names="Sub-Category", 
+       values="Sales",
+       color="Sub-Category",
+       title="Most Sold Product"
+    )
+
+    city_sales = df.groupby("City")["Sales"].sum().sort_values(ascending=False).reset_index().head()
+
+    fig_city = px.pie(
+       city_sales,
+       names="City", 
+       values="Sales",
+       color="City",
+       title="Most Sales by Cities"
+    )
+
+
+    with col1:
+        st.plotly_chart(fig_product, use_container_width=True)
+    with col2:
+        st.plotly_chart(fig_city, use_container_width=True)
 
     st.dataframe(df.head())
 
 
-#-----------Player Analysis----------------
+elif select == "Products":
+    st.title("Product Analysis")
 
-elif select == "Player Analysis":
+    products=st.multiselect(label="Select Products", options= df["Sub-Category"].unique(),default=df["Sub-Category"].unique())
 
-    st.title("Player Analysis")
+    filteredProduct = df[df["Sub-Category"].isin(products)]
 
-    player = st.selectbox("Select Player", df["Player"])
-
-    pdata = df[df["Player"]==player]
-    pdata = pdata[["Matches", "innings", "Runs", "High_score", "Strike_rate", "100","50","6s","4s"]]
-    transposeData = pdata.T.reset_index()
-
-    st.dataframe(transposeData)
-
+    sales = filteredProduct.groupby("Sub-Category")["Sales"].sum().sort_values(ascending=False).reset_index()
 
     fig = px.bar(
-        transposeData,
-        x= "index",
-        y= transposeData.columns[1],
-        color="index"
+        sales,
+        x= "Sub-Category",
+        y="Sales",
+        color="Sub-Category"
     )
+
     st.plotly_chart(fig, use_container_width=True)
 
+    st.dataframe(filteredProduct.head())
 
-#-----------Country------------
+    
+elif select == "City":
+    st.title("City Analysis")
 
+    products=st.multiselect(label="Select Products", options= df["City"].unique(),default=df["City"].head())
 
-elif select == "Country Insights":
-    st.title("Country Insights")
+    filteredProduct = df[df["City"].isin(products)]
 
-    country_runs = df.groupby("Country")["Runs"].sum().reset_index()
-    fig= px.pie(country_runs,names="Country",values="Runs")
-    st.plotly_chart(fig,use_container_width=True)
+    sales = filteredProduct.groupby("City")["Sales"].sum().sort_values(ascending=False).reset_index()
 
-    country_select = st.selectbox("Select Country", df["Country"].unique())
-    cData = df[df["Country"] == country_select]
-
-    fig_runs = px.pie(
-       cData,
-       names="Player",
-       values="Runs",
-       color="Player" 
+    fig = px.bar(
+        sales,
+        x= "City",
+        y="Sales",
+        color="City"
     )
 
-    st.plotly_chart(fig_runs , use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
 
+    st.dataframe(filteredProduct.head())
 
-#-------------Comparison----------------
-
-
-
-elif select== "Comparison":
-
-    st.title("Player Comparison")
-
-    players=st.multiselect(
-        "Compare Players",
-        df["Player"],
-        default=df["Player"].head(5)
-    )
-
-    compare=df[df["Player"].isin(players)]
-
-    fig=px.scatter(
-        compare,
-        x="Strike_rate",
-        y="Ave",
-        size="Runs",
-        color="Country"
-
-    )
-    st.plotly_chart(fig,use_container_width=True)
+    
