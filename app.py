@@ -97,7 +97,7 @@ elif select == "Products":
 elif select == "City":
     st.title("City Analysis")
 
-    products=st.multiselect(label="Select Products", options= df["City"].unique(),default=df["City"].unique().head())
+    products=st.multiselect(label="Select Products", options= df["City"].unique(),default=df["City"].sample(4))
 
     filteredProduct = df[df["City"].isin(products)]
 
