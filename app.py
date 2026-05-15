@@ -1,475 +1,584 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
 import os
-import re
-import hashlib
-import uuid
 
 st.set_page_config(
-    page_title="Course Registration",
-    page_icon="📋",
-    layout="centered"
+    page_title="EduReg — Course Registration",
+    page_icon="🎓",
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-*, html, body, [class*="css"] {
-    font-family: 'DM Sans', sans-serif !important;
+html, body, [class*="css"] {
+    font-family: 'Sora', sans-serif;
 }
 
+/* ─── Page Background ─── */
 .stApp {
-    background-color: #f5f5f4;
+    background: #0d0f14;
+    color: #e8eaf0;
 }
 
-#MainMenu, footer { visibility: hidden; }
+/* ─── Top nav pills ─── */
+.nav-link {
+    font-family: 'Sora', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.03em !important;
+    border-radius: 8px !important;
+}
+.nav-link.active {
+    background: #c8f54a !important;
+    color: #0d0f14 !important;
+}
 
-/* Metric cards */
-[data-testid="stMetric"] {
-    background: #ffffff;
-    border: 1px solid #e7e5e4;
-    border-radius: 10px;
+/* ─── Metric Cards ─── */
+[data-testid="metric-container"] {
+    background: #161a22;
+    border: 1px solid #252932;
+    border-radius: 12px;
     padding: 1rem 1.2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
-[data-testid="stMetricLabel"] p { color: #78716c !important; font-size: 0.78rem !important; font-weight: 500 !important; }
-[data-testid="stMetricValue"]   { color: #1c1917 !important; font-size: 1.7rem !important; font-weight: 600 !important; }
+[data-testid="metric-container"] label {
+    color: #8b90a0 !important;
+    font-size: 0.72rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600 !important;
+}
+[data-testid="metric-container"] [data-testid="stMetricValue"] {
+    color: #c8f54a !important;
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+    font-family: 'JetBrains Mono', monospace !important;
+}
 
-/* Buttons */
+/* ─── Inputs ─── */
+.stTextInput > div > div > input,
+.stNumberInput > div > div > input {
+    background: #161a22 !important;
+    border: 1px solid #252932 !important;
+    border-radius: 8px !important;
+    color: #e8eaf0 !important;
+    font-family: 'Sora', sans-serif !important;
+    font-size: 0.9rem !important;
+    padding: 0.6rem 0.9rem !important;
+    transition: border-color 0.2s;
+}
+.stTextInput > div > div > input:focus,
+.stNumberInput > div > div > input:focus {
+    border-color: #c8f54a !important;
+    box-shadow: 0 0 0 2px rgba(200,245,74,0.12) !important;
+}
+
+/* ─── Select boxes ─── */
+.stSelectbox > div > div {
+    background: #161a22 !important;
+    border: 1px solid #252932 !important;
+    border-radius: 8px !important;
+    color: #e8eaf0 !important;
+    font-family: 'Sora', sans-serif !important;
+}
+
+/* ─── Labels ─── */
+.stTextInput label, .stSelectbox label,
+.stNumberInput label, .stMultiSelect label {
+    color: #8b90a0 !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 4px !important;
+}
+
+/* ─── Submit button ─── */
+.stFormSubmitButton > button,
 .stButton > button {
-    background: #1c1917 !important;
-    color: #fafaf9 !important;
+    background: #c8f54a !important;
+    color: #0d0f14 !important;
+    font-family: 'Sora', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 0.88rem !important;
+    letter-spacing: 0.05em;
     border: none !important;
     border-radius: 8px !important;
-    font-family: 'DM Sans', sans-serif !important;
-    font-weight: 500 !important;
-    font-size: 0.9rem !important;
-    padding: 0.55rem 1.6rem !important;
-    letter-spacing: 0.01em !important;
-    transition: background 0.15s ease !important;
+    padding: 0.65rem 2rem !important;
     width: 100%;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    text-transform: uppercase;
 }
+.stFormSubmitButton > button:hover,
 .stButton > button:hover {
-    background: #292524 !important;
+    opacity: 0.88 !important;
+    transform: translateY(-1px);
 }
 
-/* Download button */
-.stDownloadButton > button {
-    background: #ffffff !important;
-    color: #44403c !important;
-    border: 1px solid #d6d3d1 !important;
+/* ─── Tabs ─── */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 6px;
+    background: transparent;
+    border-bottom: 1px solid #252932;
+    padding-bottom: 0;
+}
+.stTabs [data-baseweb="tab"] {
+    background: transparent;
+    color: #8b90a0;
+    border-radius: 6px 6px 0 0;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.5rem 1.2rem;
+    border: none;
+}
+.stTabs [aria-selected="true"] {
+    background: #161a22 !important;
+    color: #c8f54a !important;
+    border-top: 2px solid #c8f54a !important;
+}
+
+/* ─── Dataframe ─── */
+[data-testid="stDataFrame"] {
+    border: 1px solid #252932;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* ─── Alerts ─── */
+.stSuccess {
+    background: rgba(200,245,74,0.08) !important;
+    border: 1px solid rgba(200,245,74,0.3) !important;
     border-radius: 8px !important;
-    font-family: 'DM Sans', sans-serif !important;
-    font-weight: 500 !important;
+    color: #c8f54a !important;
+}
+.stError {
+    background: rgba(255,90,80,0.08) !important;
+    border: 1px solid rgba(255,90,80,0.3) !important;
+    border-radius: 8px !important;
+}
+.stInfo {
+    background: rgba(100,160,255,0.08) !important;
+    border: 1px solid rgba(100,160,255,0.3) !important;
+    border-radius: 8px !important;
+}
+
+/* ─── Download button ─── */
+.stDownloadButton > button {
+    background: transparent !important;
+    color: #c8f54a !important;
+    border: 1px solid #c8f54a !important;
+    font-family: 'Sora', sans-serif !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
     width: auto !important;
 }
 .stDownloadButton > button:hover {
-    background: #fafaf9 !important;
-    border-color: #a8a29e !important;
+    background: rgba(200,245,74,0.1) !important;
 }
 
-/* Inputs */
-input[type="text"], input[type="password"], input[type="number"] {
-    border: 1px solid #d6d3d1 !important;
-    border-radius: 8px !important;
-    background: #ffffff !important;
-    font-family: 'DM Sans', sans-serif !important;
-    color: #1c1917 !important;
-    font-size: 0.9rem !important;
-}
-input:focus {
-    border-color: #78716c !important;
-    box-shadow: 0 0 0 2px rgba(120,113,108,0.12) !important;
+/* ─── Multiselect ─── */
+.stMultiSelect [data-baseweb="tag"] {
+    background: rgba(200,245,74,0.15) !important;
+    color: #c8f54a !important;
+    border: 1px solid rgba(200,245,74,0.3) !important;
+    border-radius: 6px !important;
 }
 
-/* Selectbox */
-[data-baseweb="select"] > div {
-    border: 1px solid #d6d3d1 !important;
-    border-radius: 8px !important;
-    background: #ffffff !important;
+/* ─── Section dividers ─── */
+hr {
+    border-color: #252932 !important;
 }
 
-/* Labels */
-label, .stTextInput label, .stSelectbox label, .stNumberInput label {
-    color: #57534e !important;
-    font-size: 0.82rem !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.02em !important;
-}
-
-/* Headings */
-h1 { color: #1c1917 !important; font-weight: 600 !important; font-size: 1.5rem !important; letter-spacing: -0.02em !important; }
-h2 { color: #292524 !important; font-weight: 600 !important; font-size: 1.2rem !important; }
-h3 { color: #44403c !important; font-weight: 500 !important; }
-p, .stMarkdown p { color: #57534e !important; font-size: 0.9rem !important; }
-
-/* Alert boxes */
-[data-testid="stAlert"] {
-    border-radius: 8px !important;
-    border: 1px solid #e7e5e4 !important;
-    font-size: 0.88rem !important;
-}
-
-/* Tabs */
-[data-testid="stTabs"] button {
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 0.88rem !important;
-    font-weight: 500 !important;
-    color: #78716c !important;
-}
-[data-testid="stTabs"] button[aria-selected="true"] {
-    color: #1c1917 !important;
-    border-bottom-color: #1c1917 !important;
-}
-
-/* Form container */
+/* ─── Form container ─── */
 [data-testid="stForm"] {
-    background: #ffffff;
-    border: 1px solid #e7e5e4;
+    background: #161a22;
+    border: 1px solid #252932;
+    border-radius: 14px;
+    padding: 1.8rem 2rem 1.4rem;
+}
+
+/* ─── Plotly charts background ─── */
+.js-plotly-plot {
     border-radius: 12px;
-    padding: 1.5rem 1.8rem;
+    overflow: hidden;
+    border: 1px solid #252932;
 }
 
-/* Dataframe */
-[data-testid="stDataFrame"] {
-    border: 1px solid #e7e5e4 !important;
-    border-radius: 10px !important;
-    overflow: hidden !important;
+/* ─── Page title area ─── */
+.page-header {
+    padding: 1.6rem 0 0.4rem;
+    border-bottom: 1px solid #252932;
+    margin-bottom: 1.8rem;
+}
+.page-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #e8eaf0;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+.page-header p {
+    color: #8b90a0;
+    font-size: 0.82rem;
+    margin: 0.3rem 0 0;
 }
 
-/* Caption */
-.stCaption, [data-testid="stCaption"] {
-    color: #a8a29e !important;
-    font-size: 0.78rem !important;
-}
-
-/* ID card */
+/* ─── ID card ─── */
 .id-card {
-    background: #ffffff;
-    border: 1px solid #e7e5e4;
+    background: linear-gradient(135deg, #161a22 0%, #1e2330 100%);
+    border: 1px solid #252932;
+    border-left: 4px solid #c8f54a;
     border-radius: 12px;
-    padding: 1.4rem 1.8rem;
+    padding: 1.4rem 1.6rem;
     margin: 1rem 0;
 }
-.id-card-name {
-    font-size: 1.15rem;
+.id-card .id-label {
+    font-size: 0.72rem;
+    color: #8b90a0;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
     font-weight: 600;
-    color: #1c1917;
-    margin-bottom: 4px;
+    margin-bottom: 0.2rem;
 }
-.id-card-id {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.8rem;
-    color: #a8a29e;
-    letter-spacing: 0.06em;
-    margin-bottom: 12px;
+.id-card .id-value {
+    font-size: 1.1rem;
+    color: #e8eaf0;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
 }
-.id-card-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-}
-.id-card-badge {
-    background: #f5f5f4;
-    border: 1px solid #e7e5e4;
-    border-radius: 6px;
-    padding: 3px 10px;
-    font-size: 0.78rem;
-    color: #57534e;
-    font-weight: 500;
+.id-card .id-badge {
+    display: inline-block;
+    background: rgba(200,245,74,0.15);
+    color: #c8f54a;
+    border: 1px solid rgba(200,245,74,0.35);
+    border-radius: 20px;
+    padding: 0.15rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-top: 0.6rem;
 }
 
-/* Outline grid */
-.outline-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 12px;
-}
+/* ─── Outline list ─── */
 .outline-item {
-    background: #ffffff;
-    border: 1px solid #e7e5e4;
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 0.83rem;
-    color: #44403c;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.75rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid #1e2330;
+    color: #c5c8d4;
+    font-size: 0.9rem;
 }
 .outline-num {
-    font-family: 'DM Mono', monospace;
+    width: 24px;
+    height: 24px;
+    background: rgba(200,245,74,0.12);
+    color: #c8f54a;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 0.72rem;
-    color: #a8a29e;
-    min-width: 18px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0;
 }
 
-/* Section label */
+/* ─── Stat section header ─── */
 .section-label {
     font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
+    color: #8b90a0;
     text-transform: uppercase;
-    color: #a8a29e;
-    margin-bottom: 6px;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    margin: 1.6rem 0 0.8rem;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Constants ──────────────────────────────────────────────────────────────────
-CSV_FILE = "user_reg.csv"
-ADMIN_PASSWORD_HASH = hashlib.sha256("admin123".encode()).hexdigest()
 
-CITIES     = ["Karachi", "Islamabad", "Lahore", "Peshawar", "Rawalpindi", "Multan", "Quetta", "Faisalabad"]
-COURSES    = ["Web Development", "AI/ML", "Digital Marketing", "Power BI", "Cyber Security", "Data Analyst"]
-GENDERS    = ["Male", "Female", "Prefer not to say"]
-EDUCATIONS = ["Matric", "Intermediate", "Bachelor's", "Master's", "PhD"]
+# ─── PLOTLY THEME ───────────────────────────────────────────────
+CHART_THEME = {
+    "paper_bgcolor": "#161a22",
+    "plot_bgcolor": "#161a22",
+    "font_color": "#8b90a0",
+    "font_family": "Sora",
+    "gridcolor": "#252932",
+    "accent": "#c8f54a",
+}
+PALETTE = ["#c8f54a", "#4af5c8", "#f54a7b", "#4a8ef5", "#f5c84a", "#c84af5"]
+
+
+def chart_layout(fig, title=""):
+    fig.update_layout(
+        paper_bgcolor=CHART_THEME["paper_bgcolor"],
+        plot_bgcolor=CHART_THEME["plot_bgcolor"],
+        font=dict(color=CHART_THEME["font_color"], family=CHART_THEME["font_family"]),
+        title=dict(text=title, font=dict(color="#e8eaf0", size=14, family="Sora"), x=0),
+        margin=dict(l=16, r=16, t=40, b=16),
+        legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color="#8b90a0")),
+        colorway=PALETTE,
+    )
+    fig.update_xaxes(gridcolor=CHART_THEME["gridcolor"], linecolor="#252932", tickfont=dict(color="#8b90a0"))
+    fig.update_yaxes(gridcolor=CHART_THEME["gridcolor"], linecolor="#252932", tickfont=dict(color="#8b90a0"))
+    return fig
+
+
+# ─── CSV ────────────────────────────────────────────────────────
+CSV_FILE = "user_reg.csv"
+
+def save_to_csv(name, email, cnic, city, contact, age, gender, education, course):
+    new_data = pd.DataFrame({
+        "Name": [name], "Email": [email], "CNIC": [cnic],
+        "City": [city], "Contact": [contact], "Age": [age],
+        "Gender": [gender], "Education": [education], "Course": [course]
+    })
+    if os.path.exists(CSV_FILE):
+        existing = pd.read_csv(CSV_FILE)
+        pd.concat([existing, new_data], ignore_index=True).to_csv(CSV_FILE, index=False)
+    else:
+        new_data.to_csv(CSV_FILE, index=False)
+
 
 COURSE_OUTLINES = {
-    "Web Development":   ["HTML & CSS Fundamentals", "JavaScript Essentials", "Responsive Design", "React Basics", "Backend (Node/Express)", "REST APIs", "Deployment"],
-    "AI/ML":             ["Python Refresher", "NumPy & Pandas", "Data Preprocessing", "Supervised Learning", "Unsupervised Learning", "Model Evaluation", "Deep Learning Intro"],
-    "Digital Marketing": ["Marketing Fundamentals", "SEO & SEM", "Social Media Strategy", "Email Marketing", "Google Analytics", "Content Marketing", "Paid Ads"],
-    "Power BI":          ["Data Sources & Import", "Power Query (ETL)", "Data Modeling", "DAX Basics", "Building Reports", "Dashboards & Visuals", "Publishing"],
-    "Cyber Security":    ["Networking Fundamentals", "Linux Basics", "Threats & Attacks", "Cryptography", "Ethical Hacking Intro", "Firewalls & IDS", "Security Auditing"],
-    "Data Analyst":      ["Excel for Data", "SQL Fundamentals", "Python (Pandas/Matplotlib)", "Data Cleaning", "Exploratory Analysis", "Storytelling with Data", "Capstone Project"],
+    "Web Development": [
+        "HTML & CSS Fundamentals", "JavaScript Essentials",
+        "Responsive & Mobile-First Design", "React Basics",
+        "Backend Intro (Node / Express)", "Databases & REST APIs", "Deployment & DevOps"
+    ],
+    "AI/ML": [
+        "Python Refresher", "NumPy & Pandas",
+        "Data Preprocessing & Feature Engineering", "Supervised Learning",
+        "Unsupervised Learning", "Model Evaluation & Tuning", "Intro to Deep Learning"
+    ],
+    "Digital Marketing": [
+        "Marketing Fundamentals", "SEO & SEM",
+        "Social Media Strategy", "Email Marketing",
+        "Google Analytics 4", "Content Marketing", "Paid Ads — Meta & Google"
+    ],
+    "Power BI": [
+        "Data Sources & Import", "Power Query (ETL)",
+        "Data Modeling & Relationships", "DAX Fundamentals",
+        "Building Reports", "Dashboards & Visuals", "Publishing & Sharing"
+    ],
+    "Cyber Security": [
+        "Networking Fundamentals", "Linux Essentials",
+        "Threats & Attack Vectors", "Cryptography Basics",
+        "Ethical Hacking Intro", "Firewalls & IDS/IPS", "Security Auditing & Compliance"
+    ],
+    "Data Analyst": [
+        "Excel for Data Analysis", "SQL Fundamentals",
+        "Python with Pandas & Matplotlib", "Data Cleaning Techniques",
+        "Exploratory Data Analysis", "Storytelling with Data", "Capstone Project"
+    ]
 }
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
-def load_data():
-    return pd.read_csv(CSV_FILE) if os.path.exists(CSV_FILE) else pd.DataFrame()
 
-def save_registration(name, email, cnic, city, contact, age, gender, education, course):
-    reg_id = "REG-" + str(uuid.uuid4())[:8].upper()
-    row = pd.DataFrame([{
-        "ID": reg_id, "Name": name, "Email": email, "CNIC": cnic,
-        "City": city, "Contact": contact, "Age": age,
-        "Gender": gender, "Education": education, "Course": course
-    }])
-    if os.path.exists(CSV_FILE):
-        pd.concat([pd.read_csv(CSV_FILE), row], ignore_index=True).to_csv(CSV_FILE, index=False)
-    else:
-        row.to_csv(CSV_FILE, index=False)
-    return reg_id
-
-def is_duplicate(email, cnic):
-    data = load_data()
-    return not data.empty and ((data["Email"] == email) | (data["CNIC"] == cnic)).any()
-
-def valid_email(v):   return bool(re.match(r"^[\w\.-]+@[\w\.-]+\.\w{2,}$", v))
-def valid_cnic(v):    return bool(re.match(r"^\d{5}-\d{7}-\d$", v))
-def valid_contact(v): return bool(re.match(r"^(03\d{9}|\+923\d{9})$", v))
-
-def chart_style():
-    return dict(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font_color="#57534e",
-        font_family="DM Sans",
-        margin=dict(t=36, b=0, l=0, r=0)
-    )
-
-PALETTE = ["#1c1917", "#44403c", "#78716c", "#a8a29e", "#d6d3d1"]
-
-# ── Nav ────────────────────────────────────────────────────────────────────────
+# ─── NAV ────────────────────────────────────────────────────────
 select = option_menu(
     menu_title=None,
-    options=["Register", "Admin"],
-    icons=["person", "shield-lock"],
+    options=["User", "Admin"],
+    icons=["person-fill", "bar-chart-fill"],
     orientation="horizontal",
     styles={
-        "container":         {"background-color": "#ffffff", "border": "1px solid #e7e5e4", "border-radius": "10px", "padding": "4px"},
-        "nav-link":          {"font-family": "DM Sans, sans-serif", "font-size": "0.88rem", "color": "#78716c", "border-radius": "7px", "font-weight": "500"},
-        "nav-link-selected": {"background": "#1c1917", "color": "#fafaf9", "font-weight": "600"},
+        "container": {"background-color": "#0d0f14", "padding": "0.6rem 0"},
+        "icon": {"color": "#8b90a0", "font-size": "14px"},
+        "nav-link": {
+            "font-family": "Sora, sans-serif",
+            "font-size": "0.82rem",
+            "font-weight": "600",
+            "color": "#8b90a0",
+            "letter-spacing": "0.06em",
+            "text-transform": "uppercase",
+            "border-radius": "8px",
+            "padding": "0.45rem 1.4rem",
+        },
+        "nav-link-selected": {
+            "background-color": "#c8f54a",
+            "color": "#0d0f14",
+        },
     }
 )
 
-# ══════════════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════
 # ADMIN
-# ══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════
 if select == "Admin":
-
-    if "admin_auth" not in st.session_state:
-        st.session_state.admin_auth = False
-
-    if not st.session_state.admin_auth:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("## Admin Access")
-        st.caption("Enter your password to continue.")
-        pwd = st.text_input("Password", type="password", placeholder="••••••••")
-        if st.button("Continue"):
-            if hashlib.sha256(pwd.encode()).hexdigest() == ADMIN_PASSWORD_HASH:
-                st.session_state.admin_auth = True
-                st.rerun()
-            else:
-                st.error("Wrong password.")
-        st.caption("Default password: `admin123`")
-
-    else:
-        col_title, col_logout = st.columns([5, 1])
-        with col_title:
-            st.markdown("## Dashboard")
-        with col_logout:
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Log out"):
-                st.session_state.admin_auth = False
-                st.rerun()
-
-        tab1, tab2 = st.tabs(["Overview", "Records"])
-
-        with tab1:
-            data = load_data()
-            if data.empty:
-                st.info("No registrations yet.")
-            else:
-                c1, c2, c3, c4 = st.columns(4)
-                c1.metric("Total",  data["CNIC"].nunique())
-                c2.metric("Avg Age", f"{round(data['Age'].mean())}")
-                c3.metric("Male",   int((data["Gender"] == "Male").sum()))
-                c4.metric("Female", int((data["Gender"] == "Female").sum()))
-
-                st.markdown("<br>", unsafe_allow_html=True)
-                col_a, col_b = st.columns(2)
-
-                with col_a:
-                    df = data["Course"].value_counts().reset_index()
-                    fig = px.pie(df, names="Course", values="count", hole=0.5,
-                                 color_discrete_sequence=PALETTE)
-                    fig.update_layout(**chart_style(), title_text="By course", title_font_size=13)
-                    fig.update_traces(textfont_size=11)
-                    st.plotly_chart(fig, use_container_width=True)
-
-                with col_b:
-                    df = data["Gender"].value_counts().reset_index()
-                    fig = px.pie(df, names="Gender", values="count", hole=0.5,
-                                 color_discrete_sequence=PALETTE)
-                    fig.update_layout(**chart_style(), title_text="By gender", title_font_size=13)
-                    fig.update_traces(textfont_size=11)
-                    st.plotly_chart(fig, use_container_width=True)
-
-                df = data["City"].value_counts().reset_index()
-                fig = px.bar(df, x="City", y="count", color_discrete_sequence=["#44403c"])
-                fig.update_layout(**chart_style(), title_text="By city", title_font_size=13,
-                                  showlegend=False,
-                                  xaxis=dict(tickfont_size=11),
-                                  yaxis=dict(tickfont_size=11))
-                fig.update_traces(marker_line_width=0)
-                st.plotly_chart(fig, use_container_width=True)
-
-                df = data["Education"].value_counts().reset_index()
-                fig = px.bar(df, x="Education", y="count", color_discrete_sequence=["#78716c"])
-                fig.update_layout(**chart_style(), title_text="By education", title_font_size=13,
-                                  showlegend=False,
-                                  xaxis=dict(tickfont_size=11),
-                                  yaxis=dict(tickfont_size=11))
-                fig.update_traces(marker_line_width=0)
-                st.plotly_chart(fig, use_container_width=True)
-
-        with tab2:
-            data = load_data()
-            if data.empty:
-                st.info("No registrations yet.")
-            else:
-                f1, f2 = st.columns(2)
-                with f1:
-                    sel_courses = st.multiselect("Course", data["Course"].unique(), default=list(data["Course"].unique()))
-                with f2:
-                    sel_cities = st.multiselect("City", data["City"].unique(), default=list(data["City"].unique()))
-
-                filtered = data[data["Course"].isin(sel_courses) & data["City"].isin(sel_cities)]
-                st.caption(f"{len(filtered)} of {len(data)} records")
-                st.dataframe(filtered, use_container_width=True, hide_index=True)
-                st.download_button("Download CSV", filtered.to_csv(index=False), "registrations.csv", "text/csv")
-
-# ══════════════════════════════════════════════════════════════════════════════
-# USER
-# ══════════════════════════════════════════════════════════════════════════════
-elif select == "Register":
-    tab1, tab2 = st.tabs(["Registration", "My Card"])
+    tab1, tab2 = st.tabs(["📊  Stats", "📋  Records"])
 
     with tab1:
-        st.markdown("## Registration")
-        st.caption("All fields are required.")
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown('<div class="page-header"><h1>Registration Stats</h1><p>Live overview of all registrations</p></div>', unsafe_allow_html=True)
 
-        with st.form("reg_form"):
-            c1, c2 = st.columns(2)
-            with c1:
-                name      = st.text_input("Full Name", placeholder="Muhammad Ali")
-                email     = st.text_input("Email", placeholder="ali@example.com")
-                cnic      = st.text_input("CNIC", placeholder="42101-1234567-1")
-                city      = st.selectbox("City", CITIES)
-            with c2:
-                contact   = st.text_input("Contact", placeholder="03001234567")
-                age       = st.number_input("Age", min_value=18, max_value=60, value=22)
-                gender    = st.selectbox("Gender", GENDERS)
-                education = st.selectbox("Education", EDUCATIONS)
+        if os.path.exists(CSV_FILE):
+            data = pd.read_csv(CSV_FILE)
 
-            course    = st.selectbox("Course", COURSES)
-            submitted = st.form_submit_button("Submit Registration")
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Total Students", data["CNIC"].nunique())
+            col2.metric("Avg Age", round(data["Age"].mean()))
+            col3.metric("Male", int((data["Gender"] == "Male").sum()))
+            col4.metric("Female", int((data["Gender"] == "Female").sum()))
 
-        if submitted:
-            errors = []
-            if not name.strip():           errors.append("Name is required.")
-            if not valid_email(email):     errors.append("Enter a valid email address.")
-            if not valid_cnic(cnic):       errors.append("CNIC format: 42101-1234567-1")
-            if not valid_contact(contact): errors.append("Enter a valid Pakistani number (03xxxxxxxxx).")
+            st.markdown('<div class="section-label">Gender Breakdown</div>', unsafe_allow_html=True)
+            gc = data["Gender"].value_counts().reset_index()
+            fig1 = px.bar(gc, x="Gender", y="count", color="Gender", color_discrete_sequence=PALETTE,
+                          text_auto=True)
+            fig1.update_traces(marker_line_width=0, textfont_color="#0d0f14")
+            st.plotly_chart(chart_layout(fig1), use_container_width=True)
 
-            if errors:
-                for e in errors:
-                    st.error(e)
-            elif is_duplicate(email, cnic):
-                st.warning("This email or CNIC is already registered.")
-            else:
-                reg_id = save_registration(name, email, cnic, city, contact, age, gender, education, course)
-                st.success(f"Registered successfully. Your ID: **{reg_id}**")
-                st.balloons()
-                st.caption("Save this ID — you'll need it to retrieve your card.")
+            st.markdown('<div class="section-label">Course Enrollments</div>', unsafe_allow_html=True)
+            cc = data["Course"].value_counts().reset_index()
+            fig2 = px.pie(cc, names="Course", values="count", color_discrete_sequence=PALETTE,
+                          hole=0.55)
+            fig2.update_traces(textfont=dict(color="#0d0f14", family="Sora", size=12),
+                               marker=dict(line=dict(color="#0d0f14", width=2)))
+            st.plotly_chart(chart_layout(fig2), use_container_width=True)
+
+            col_l, col_r = st.columns(2)
+            with col_l:
+                st.markdown('<div class="section-label">By City</div>', unsafe_allow_html=True)
+                city_c = data["City"].value_counts().reset_index()
+                fig3 = px.bar(city_c, x="City", y="count", color="City",
+                              color_discrete_sequence=PALETTE, text_auto=True)
+                fig3.update_traces(marker_line_width=0, textfont_color="#0d0f14")
+                st.plotly_chart(chart_layout(fig3), use_container_width=True)
+
+            with col_r:
+                st.markdown('<div class="section-label">Education Level</div>', unsafe_allow_html=True)
+                edu_c = data["Education"].value_counts().reset_index()
+                fig4 = px.pie(edu_c, names="Education", values="count",
+                              color_discrete_sequence=PALETTE, hole=0.45)
+                fig4.update_traces(marker=dict(line=dict(color="#0d0f14", width=2)))
+                st.plotly_chart(chart_layout(fig4), use_container_width=True)
+
+        else:
+            st.info("No registrations yet — check back once users sign up.")
 
     with tab2:
-        st.markdown("## Your Registration Card")
-        st.caption("Enter the details you registered with.")
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown('<div class="page-header"><h1>Student Records</h1><p>Filter and export registration data</p></div>', unsafe_allow_html=True)
+
+        if os.path.exists(CSV_FILE):
+            data = pd.read_csv(CSV_FILE)
+            options = data["Course"].unique().tolist()
+            default = [options[0]] if options else []
+            selected = st.multiselect("Filter by Course", options, default)
+            filtered = data[data["Course"].isin(selected)] if selected else data
+
+            st.dataframe(
+                filtered.reset_index(drop=True),
+                use_container_width=True,
+                hide_index=True
+            )
+
+            st.download_button(
+                "⬇  Export CSV",
+                data=filtered.to_csv(index=False),
+                file_name="registrations.csv",
+                mime="text/csv"
+            )
+        else:
+            st.info("No registrations yet.")
+
+
+# ═══════════════════════════════════════════════════════════════
+# USER
+# ═══════════════════════════════════════════════════════════════
+elif select == "User":
+    tab1, tab2 = st.tabs(["✏️  Register", "🪪  My ID & Outline"])
+
+    with tab1:
+        st.markdown('<div class="page-header"><h1>Course Registration</h1><p>Fill in your details to enroll</p></div>', unsafe_allow_html=True)
+
+        with st.form("registration_form"):
+            col_a, col_b = st.columns(2)
+            with col_a:
+                name = st.text_input("Full Name", placeholder="Ali Hassan")
+                email = st.text_input("Email", placeholder="ali@example.com")
+                cnic = st.text_input("CNIC", placeholder="42101-1234567-8")
+                contact = st.text_input("Contact", placeholder="0300-1234567")
+            with col_b:
+                city = st.selectbox("City", ["Karachi", "Lahore", "Islamabad", "Rawalpindi", "Peshawar", "Multan"])
+                age = st.number_input("Age", min_value=18, max_value=60, value=22)
+                gender = st.selectbox("Gender", ["Male", "Female"])
+                education = st.selectbox("Education", ["Matric", "Intermediate", "Bachelor's", "Master's", "PhD"])
+
+            course = st.selectbox(
+                "Select Course",
+                ["Web Development", "AI/ML", "Digital Marketing", "Power BI", "Cyber Security", "Data Analyst"]
+            )
+
+            submitted = st.form_submit_button("Submit Registration →")
+
+        if submitted:
+            if all([name, email, cnic, contact]):
+                save_to_csv(name, email, cnic, city, contact, age, gender, education, course)
+                st.success(f"You're registered for **{course}**. Welcome aboard, {name.split()[0]}!")
+                st.balloons()
+            else:
+                st.error("Please complete all required fields before submitting.")
+
+    with tab2:
+        st.markdown('<div class="page-header"><h1>Your ID & Course Outline</h1><p>Enter your credentials to retrieve your registration</p></div>', unsafe_allow_html=True)
 
         with st.form("lookup_form"):
-            l_email = st.text_input("Email", placeholder="ali@example.com")
-            l_cnic  = st.text_input("CNIC", placeholder="42101-1234567-1")
-            lookup  = st.form_submit_button("Retrieve")
+            lu_email = st.text_input("Email", placeholder="ali@example.com")
+            lu_cnic = st.text_input("CNIC", placeholder="42101-1234567-8")
+            lookup = st.form_submit_button("Retrieve →")
 
         if lookup:
-            data = load_data()
-            if data.empty:
-                st.info("No registrations found.")
-            else:
-                match = data[(data["Email"] == l_email.strip()) & (data["CNIC"] == l_cnic.strip())]
+            if os.path.exists(CSV_FILE):
+                data = pd.read_csv(CSV_FILE)
+                match = data[data["Email"].str.lower() == lu_email.strip().lower()]
+
                 if match.empty:
-                    st.error("No record found for this email and CNIC combination.")
+                    st.info("No registration found with that email address.")
                 else:
-                    row    = match.iloc[0]
-                    reg_id = row.get("ID", "—")
+                    candidate = match.iloc[0]
+                    student_id = f"EDU-{int(candidate['Age']) * 2:04d}-{str(candidate['CNIC'])[-4:]}"
+                    course = candidate["Course"]
 
                     st.markdown(f"""
                     <div class="id-card">
-                        <div class="id-card-name">{row['Name']}</div>
-                        <div class="id-card-id">{reg_id}</div>
-                        <div class="id-card-meta">
-                            <span class="id-card-badge">{row['Course']}</span>
-                            <span class="id-card-badge">{row['City']}</span>
-                            <span class="id-card-badge">{row['Education']}</span>
-                            <span class="id-card-badge">{row['Gender']}</span>
-                            <span class="id-card-badge">Age {row['Age']}</span>
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+                            <div>
+                                <div class="id-label">Student Name</div>
+                                <div class="id-value">{candidate['Name']}</div>
+                            </div>
+                            <div>
+                                <div class="id-label">Student ID</div>
+                                <div class="id-value">{student_id}</div>
+                            </div>
+                            <div>
+                                <div class="id-label">City</div>
+                                <div class="id-value">{candidate['City']}</div>
+                            </div>
+                        </div>
+                        <div style="margin-top:1rem;">
+                            <span class="id-badge">🎓 {course}</span>
+                            <span class="id-badge" style="margin-left:0.5rem;">📘 {candidate['Education']}</span>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
 
-                    outline = COURSE_OUTLINES.get(row["Course"], [])
+                    outline = COURSE_OUTLINES.get(course, [])
                     if outline:
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        st.markdown(f'<div class="section-label">{row["Course"]} — Course Outline</div>', unsafe_allow_html=True)
-                        items = "".join(
-                            f'<div class="outline-item"><span class="outline-num">0{i+1}</span>{topic}</div>'
+                        st.markdown(f'<div class="section-label">{course} — Course Outline</div>', unsafe_allow_html=True)
+                        items_html = "".join([
+                            f'<div class="outline-item"><div class="outline-num">{i+1:02d}</div><span>{topic}</span></div>'
                             for i, topic in enumerate(outline)
-                        )
-                        st.markdown(f'<div class="outline-grid">{items}</div>', unsafe_allow_html=True)
+                        ])
+                        st.markdown(items_html, unsafe_allow_html=True)
+            else:
+                st.info("No registrations on file yet.")
