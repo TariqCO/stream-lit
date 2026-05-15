@@ -103,7 +103,7 @@ if select == "Admin":
 elif select == "User":
     tab1, tab2 = st.tabs(["Registration", "Outline"])
     with tab1:
-        st.title("Event Registration Form")
+        st.title("Registration")
         with st.form("Enter Registration Form"):
             name = st.text_input("Name", placeholder="Enter your Full Name")
             email = st.text_input("Email", placeholder="Enter your Email Address")
