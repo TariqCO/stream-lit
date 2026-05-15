@@ -1,117 +1,216 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import streamlit_option_menu as stm
+from streamlit_option_menu import option_menu
+import os 
 
-st.set_page_config(layout='wide')
-
-st.title("Ecommerce Dashboard")
-
-df = pd.read_excel("./newData.xlsx")
-
-select = stm.option_menu(
-    menu_title=None,
-    options=["Home","Products","City"],
-    icons=["house","cart","globe"],
-    orientation="horizontal"
+st.set_page_config(
+    page_title="Course Registration Form",
+    layout="centered"
 )
 
 
-if select == "Home":
+select = option_menu(
+    menu_title=None,
+    options=["User","Admin"],
+    icons=["admin","user",],
+    orientation="horizontal"
+)
 
-    st.header("Key Performance Indicator (KPI's)")
-    col1, col2, col3, col4 ,col5= st.columns(5)
-    col1.metric("Total Cities", df["City"].nunique())
-    col2.metric("Total States", df["State"].nunique())
-    col3.metric("Total Categories", df["Category"].nunique())
-    col4.metric("Total Customers", df["Customer ID"].nunique())
-    col5.metric("Total Sales", df["Sales"].sum().round(2))
-   
+CSV_FILE = "user_reg.csv"
 
-    st.header("Business Charts")
+def save_to_csv(name, email, cnic, city, contact, age, gender, education, course):
+    new_data = pd.DataFrame({
+        "Name": [name],
+        "Email": [email],
+        "CNIC": [cnic],
+        "City": [city],
+        "Contact": [contact],
+        "Age": [age],
+        "Gender": [gender],
+        "Education": [education],
+        "Course": [course]
 
-    year_sales = df.groupby("Year")["Sales"].sum().sort_values().reset_index()
-
-    fig_year = px.bar(
-        year_sales,
-        x="Year",
-        y="Sales",
-        color="Year",
-        title="Sales by Years"
-    )
-
-    st.plotly_chart(fig_year, use_container_width=True)
-
-    col1,col2 = st.columns(2)
-
-    product_sales = df.groupby("Sub-Category")["Sales"].sum().sort_values(ascending=False).reset_index().head()
-
-    fig_product = px.pie(
-       product_sales,
-       names="Sub-Category", 
-       values="Sales",
-       color="Sub-Category",
-       title="Most Sold Product"
-    )
-
-    city_sales = df.groupby("City")["Sales"].sum().sort_values(ascending=False).reset_index().head()
-
-    fig_city = px.pie(
-       city_sales,
-       names="City", 
-       values="Sales",
-       color="City",
-       title="Most Sales by Cities"
-    )
-
-
-    with col1:
-        st.plotly_chart(fig_product, use_container_width=True)
-    with col2:
-        st.plotly_chart(fig_city, use_container_width=True)
-
-    st.dataframe(df.head())
-
-
-elif select == "Products":
-    st.title("Product Analysis")
-
-    products=st.multiselect(label="Select Products", options= df["Sub-Category"].unique(),default=df["Sub-Category"].unique())
-
-    filteredProduct = df[df["Sub-Category"].isin(products)]
-
-    sales = filteredProduct.groupby("Sub-Category")["Sales"].sum().sort_values(ascending=False).reset_index()
-
-    fig = px.bar(
-        sales,
-        x= "Sub-Category",
-        y="Sales",
-        color="Sub-Category"
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
-
-    st.dataframe(filteredProduct.head())
-
+    })
     
-elif select == "City":
-    st.title("City Analysis")
+    if os.path.exists(CSV_FILE):
+        existing_data = pd.read_csv(CSV_FILE)
+        updated_data = pd.concat([existing_data, new_data], ignore_index=True)
+        updated_data.to_csv(CSV_FILE, index=False)
+    else:
+        new_data.to_csv(CSV_FILE, index=False)
 
-    products=st.multiselect(label="Select Products", options= df["City"].unique(),default=df["City"].sample(4))
+    return True
 
-    filteredProduct = df[df["City"].isin(products)]
 
-    sales = filteredProduct.groupby("City")["Sales"].sum().sort_values(ascending=False).reset_index()
 
-    fig = px.bar(
-        sales,
-        x= "City",
-        y="Sales",
-        color="City"
-    )
+if select == "Admin":
+    tab1, tab2= st.tabs(["Stats", "Information"])
+    with tab1:
+        st.title("Course Registration Statistics")
+        if os.path.exists(CSV_FILE):
+            data = pd.read_csv(CSV_FILE)
 
-    st.plotly_chart(fig, use_container_width=True)
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric(label="Total Registrations", value=data["CNIC"].nunique())
+            col2.metric(label="Average Age", value=round(data["Age"].mean()))
+            col3.metric(label="Total Male", value=(data["Gender"] == "Male").sum())
+            col4.metric(label="Total Female", value=(data["Gender"] == "Female").sum())
 
-    st.dataframe(filteredProduct.head())
 
-    
+            genderCount = data["Gender"].value_counts().reset_index()
+            fig1 = px.bar(genderCount, x="Gender", y="count", color="Gender")
+            st.plotly_chart(fig1)
+
+            courseCount = data["Course"].value_counts().reset_index()
+            fig2 = px.pie(courseCount, names="Course", values="count", color="Course")
+            st.plotly_chart(fig2)
+
+
+            cityCount = data["City"].value_counts().reset_index()
+            fig3 = px.bar(cityCount, x="City", y="count", color="City")
+            st.plotly_chart(fig3)
+
+            eduCount = data["Education"].value_counts().reset_index()
+            fig4 = px.pie(eduCount, names="Education", values="count", color="Education")
+            st.plotly_chart(fig4)
+
+        else:
+            st.info("No Data Saved Yet")
+
+    with tab2:
+        st.title("Information")
+        if os.path.exists(CSV_FILE):
+            data = pd.read_csv(CSV_FILE)
+
+            options = data["Course"].unique() 
+            selected = st.multiselect("Select Course", options , ["Web Development"])
+            filtered_df = data[data['Course'].isin(selected)]
+            st.dataframe(filtered_df)
+
+
+            csv = filtered_df.to_csv(index=False)
+
+            st.download_button(
+                label="Download CSV",
+                data=csv,
+                file_name="user_data.csv",
+                mime="text/csv"
+            )    
+        else:
+            st.info("No Data Saved Yet")    
+
+elif select == "User":
+    tab1, tab2 = st.tabs(["Registration", "Outline"])
+    with tab1:
+        st.title("Event Registration Form")
+        with st.form("Enter Registration Form"):
+            name = st.text_input("Name", placeholder="Enter your Full Name")
+            email = st.text_input("Email", placeholder="Enter your Email Address")
+            cnic = st.text_input("CNIC", placeholder="Enter your CNIC")
+            city = st.selectbox("City",  ["Karachi", "Islamabad", "Lahore", "Peshawar", "Rawalpindi", "Multan"])
+            contact = st.text_input("Contact", placeholder="Enter your Mobile Number")
+            age = st.number_input("Age", min_value=18, max_value=60)
+            course = st.selectbox("Course", ["Web Development", "AI/ML", "Digital Marketing", "Power BI", "Cyber Security", "Data Analyist"])
+            gender = st.selectbox("Gender", ["Male", "Female"])
+            education = st.selectbox("Education", ["Matric", "Intermediate", " Bachelor's" ,"Master's", "PhD"] )
+
+            submited = st.form_submit_button("Register")
+
+        if submited:
+            if name and email and cnic and contact and age and course and gender and education and city:
+                save_to_csv(name, email, cnic, city, contact, age, gender, education, course)
+                st.success("Registration Successful!")
+                st.balloons()
+            else:
+                st.error("Please fill all required fields!")
+            
+    with tab2:
+        st.title("Get your ID and Course Outline")
+        with st.form("Create your id card"):
+            email = st.text_input("Enter your email", placeholder="Enter your Email Address")
+            cnic = st.text_input("Enter your CNIC", placeholder="Enter your CNIC")
+
+            create = st.form_submit_button("Create ID")
+
+            if create:
+                if os.path.exists(CSV_FILE):
+                    data = pd.read_csv(CSV_FILE)
+
+                    candidateData = data[data["Email"] == email]
+                    
+                    if len(candidateData) == 0:
+                        st.info("No Candidate registered with this Email or CNIC")
+                    else:
+                        candidateData = candidateData.iloc[0]
+
+                        st.success(f" This is your Course Registration Card ---> ID: #{candidateData["Age"] * 2}")
+
+
+                        course_outlines = {
+                            "Web Development": [
+                                "HTML/CSS Fundamentals",
+                                "JavaScript Essentials",
+                                "Responsive Design",
+                                "React Basics",
+                                "Backend Intro (Node/Express)",
+                                "Deployment"
+                            ],
+                            "AI/ML": [
+                                "Python Refresher",
+                                "NumPy & Pandas",
+                                "Data Preprocessing",
+                                "Supervised Learning",
+                                "Unsupervised Learning",
+                                "Model Evaluation",
+                                "Intro to Deep Learning"
+                            ],
+                            "Digital Marketing": [
+                                "Marketing Fundamentals",
+                                "SEO & SEM",
+                                "Social Media Strategy",
+                                "Email Marketing",
+                                "Google Analytics",
+                                "Content Marketing",
+                                "Paid Ads (Meta/Google)"
+                            ],
+                            "Power BI": [
+                                "Data Sources & Import",
+                                "Power Query (ETL)",
+                                "Data Modeling",
+                                "DAX Basics",
+                                "Building Reports",
+                                "Dashboards & Visuals",
+                                "Publishing & Sharing"
+                            ],
+                            "Cyber Security": [
+                                "Networking Fundamentals",
+                                "Linux Basics",
+                                "Threats & Attack Types",
+                                "Cryptography",
+                                "Ethical Hacking Intro",
+                                "Firewalls & IDS",
+                                "Security Auditing"
+                            ],
+                            "Data Analyst": [
+                                "Excel for Data",
+                                "SQL Fundamentals",
+                                "Python (Pandas/Matplotlib)",
+                                "Data Cleaning",
+                                "Exploratory Data Analysis",
+                                "Storytelling with Data",
+                                "Capstone Project"
+                            ]
+                        }
+
+                        course = candidateData["Course"]
+                        outline = course_outlines[course]
+
+                        if outline:
+                            st.subheader(f"{candidateData["Course"]} — Course Outline")
+
+                            for topic in outline:
+                                st.markdown(f"- {topic}")
+
+                else:
+                    st.info("No data saved yet")    
