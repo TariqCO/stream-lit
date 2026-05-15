@@ -7,395 +7,469 @@ import re
 import hashlib
 import uuid
 
-# ─── Page Config ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="EduReg · Course Registration",
-    page_icon="🎓",
+    page_title="Course Registration",
+    page_icon="📋",
     layout="centered"
 )
 
-# ─── Custom CSS ───────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
 
-html, body, [class*="css"] {
-    font-family: 'Sora', sans-serif;
+*, html, body, [class*="css"] {
+    font-family: 'DM Sans', sans-serif !important;
 }
 
-/* Background */
 .stApp {
-    background: linear-gradient(135deg, #0f0c29, #1a1a4e, #24243e);
-    min-height: 100vh;
+    background-color: #f5f5f4;
 }
 
-/* Hide Streamlit branding */
-#MainMenu, footer, header { visibility: hidden; }
-
-/* Top nav override */
-section[data-testid="stSidebar"] { display: none; }
+#MainMenu, footer { visibility: hidden; }
 
 /* Metric cards */
 [data-testid="stMetric"] {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 14px;
-    padding: 1rem;
-    backdrop-filter: blur(10px);
+    background: #ffffff;
+    border: 1px solid #e7e5e4;
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
 }
-
-[data-testid="stMetricLabel"] { color: #a0aec0 !important; font-size: 0.78rem; }
-[data-testid="stMetricValue"] { color: #e2e8f0 !important; font-size: 1.8rem; font-weight: 700; }
-
-/* Form inputs */
-input, select, textarea {
-    border-radius: 10px !important;
-}
+[data-testid="stMetricLabel"] p { color: #78716c !important; font-size: 0.78rem !important; font-weight: 500 !important; }
+[data-testid="stMetricValue"]   { color: #1c1917 !important; font-size: 1.7rem !important; font-weight: 600 !important; }
 
 /* Buttons */
 .stButton > button {
-    background: linear-gradient(135deg, #667eea, #764ba2) !important;
-    color: white !important;
+    background: #1c1917 !important;
+    color: #fafaf9 !important;
     border: none !important;
-    border-radius: 10px !important;
-    font-family: 'Sora', sans-serif !important;
-    font-weight: 600 !important;
-    padding: 0.6rem 2rem !important;
-    transition: opacity 0.2s ease !important;
+    border-radius: 8px !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
+    padding: 0.55rem 1.6rem !important;
+    letter-spacing: 0.01em !important;
+    transition: background 0.15s ease !important;
     width: 100%;
 }
-.stButton > button:hover { opacity: 0.85 !important; }
+.stButton > button:hover {
+    background: #292524 !important;
+}
 
 /* Download button */
 .stDownloadButton > button {
-    background: rgba(255,255,255,0.08) !important;
-    color: #a0aec0 !important;
-    border: 1px solid rgba(255,255,255,0.15) !important;
-    border-radius: 10px !important;
-    font-family: 'Sora', sans-serif !important;
+    background: #ffffff !important;
+    color: #44403c !important;
+    border: 1px solid #d6d3d1 !important;
+    border-radius: 8px !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-weight: 500 !important;
+    width: auto !important;
+}
+.stDownloadButton > button:hover {
+    background: #fafaf9 !important;
+    border-color: #a8a29e !important;
 }
 
-/* ID card */
-.id-card {
-    background: linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2));
-    border: 1px solid rgba(102,126,234,0.4);
-    border-radius: 16px;
-    padding: 1.5rem 2rem;
-    margin: 1rem 0;
-    backdrop-filter: blur(12px);
+/* Inputs */
+input[type="text"], input[type="password"], input[type="number"] {
+    border: 1px solid #d6d3d1 !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    font-family: 'DM Sans', sans-serif !important;
+    color: #1c1917 !important;
+    font-size: 0.9rem !important;
 }
-.id-card h3 { color: #e2e8f0; margin-bottom: 0.3rem; font-size: 1.4rem; }
-.id-card .id-number {
-    font-family: 'JetBrains Mono', monospace;
-    color: #667eea;
-    font-size: 1rem;
-    letter-spacing: 0.08em;
+input:focus {
+    border-color: #78716c !important;
+    box-shadow: 0 0 0 2px rgba(120,113,108,0.12) !important;
 }
-.id-card .meta { color: #a0aec0; font-size: 0.85rem; margin-top: 0.6rem; }
 
-/* Outline topic pill */
-.topic-pill {
-    display: inline-block;
-    background: rgba(102,126,234,0.15);
-    border: 1px solid rgba(102,126,234,0.3);
-    border-radius: 20px;
-    padding: 0.35rem 0.9rem;
-    margin: 0.25rem;
-    color: #c3d0ff;
-    font-size: 0.82rem;
+/* Selectbox */
+[data-baseweb="select"] > div {
+    border: 1px solid #d6d3d1 !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+}
+
+/* Labels */
+label, .stTextInput label, .stSelectbox label, .stNumberInput label {
+    color: #57534e !important;
+    font-size: 0.82rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.02em !important;
+}
+
+/* Headings */
+h1 { color: #1c1917 !important; font-weight: 600 !important; font-size: 1.5rem !important; letter-spacing: -0.02em !important; }
+h2 { color: #292524 !important; font-weight: 600 !important; font-size: 1.2rem !important; }
+h3 { color: #44403c !important; font-weight: 500 !important; }
+p, .stMarkdown p { color: #57534e !important; font-size: 0.9rem !important; }
+
+/* Alert boxes */
+[data-testid="stAlert"] {
+    border-radius: 8px !important;
+    border: 1px solid #e7e5e4 !important;
+    font-size: 0.88rem !important;
 }
 
 /* Tabs */
-[data-testid="stTab"] button {
-    font-family: 'Sora', sans-serif !important;
-    font-weight: 600 !important;
+[data-testid="stTabs"] button {
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: 0.88rem !important;
+    font-weight: 500 !important;
+    color: #78716c !important;
+}
+[data-testid="stTabs"] button[aria-selected="true"] {
+    color: #1c1917 !important;
+    border-bottom-color: #1c1917 !important;
+}
+
+/* Form container */
+[data-testid="stForm"] {
+    background: #ffffff;
+    border: 1px solid #e7e5e4;
+    border-radius: 12px;
+    padding: 1.5rem 1.8rem;
 }
 
 /* Dataframe */
 [data-testid="stDataFrame"] {
-    border-radius: 12px;
-    overflow: hidden;
+    border: 1px solid #e7e5e4 !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
 }
 
-/* Info/success/error */
-[data-testid="stAlert"] { border-radius: 12px !important; }
+/* Caption */
+.stCaption, [data-testid="stCaption"] {
+    color: #a8a29e !important;
+    font-size: 0.78rem !important;
+}
 
-/* Section headers */
-h1 { color: #e2e8f0 !important; font-weight: 700 !important; }
-h2, h3 { color: #cbd5e0 !important; }
-label { color: #a0aec0 !important; }
+/* ID card */
+.id-card {
+    background: #ffffff;
+    border: 1px solid #e7e5e4;
+    border-radius: 12px;
+    padding: 1.4rem 1.8rem;
+    margin: 1rem 0;
+}
+.id-card-name {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #1c1917;
+    margin-bottom: 4px;
+}
+.id-card-id {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: #a8a29e;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+}
+.id-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+.id-card-badge {
+    background: #f5f5f4;
+    border: 1px solid #e7e5e4;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    color: #57534e;
+    font-weight: 500;
+}
+
+/* Outline grid */
+.outline-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+}
+.outline-item {
+    background: #ffffff;
+    border: 1px solid #e7e5e4;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.83rem;
+    color: #44403c;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.outline-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: #a8a29e;
+    min-width: 18px;
+}
+
+/* Section label */
+.section-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #a8a29e;
+    margin-bottom: 6px;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# ─── Constants ────────────────────────────────────────────────────────────────
+# ── Constants ──────────────────────────────────────────────────────────────────
 CSV_FILE = "user_reg.csv"
-ADMIN_PASSWORD_HASH = hashlib.sha256("admin123".encode()).hexdigest()  # Change this!
+ADMIN_PASSWORD_HASH = hashlib.sha256("admin123".encode()).hexdigest()
 
-CITIES = ["Karachi", "Islamabad", "Lahore", "Peshawar", "Rawalpindi", "Multan", "Quetta", "Faisalabad"]
-COURSES = ["Web Development", "AI/ML", "Digital Marketing", "Power BI", "Cyber Security", "Data Analyst"]
-GENDERS = ["Male", "Female", "Prefer not to say"]
+CITIES     = ["Karachi", "Islamabad", "Lahore", "Peshawar", "Rawalpindi", "Multan", "Quetta", "Faisalabad"]
+COURSES    = ["Web Development", "AI/ML", "Digital Marketing", "Power BI", "Cyber Security", "Data Analyst"]
+GENDERS    = ["Male", "Female", "Prefer not to say"]
 EDUCATIONS = ["Matric", "Intermediate", "Bachelor's", "Master's", "PhD"]
 
 COURSE_OUTLINES = {
-    "Web Development": [
-        "HTML & CSS Fundamentals", "JavaScript Essentials", "Responsive Design",
-        "React Basics", "Backend Intro (Node/Express)", "REST APIs", "Deployment & DevOps"
-    ],
-    "AI/ML": [
-        "Python Refresher", "NumPy & Pandas", "Data Preprocessing",
-        "Supervised Learning", "Unsupervised Learning", "Model Evaluation", "Intro to Deep Learning"
-    ],
-    "Digital Marketing": [
-        "Marketing Fundamentals", "SEO & SEM", "Social Media Strategy",
-        "Email Marketing", "Google Analytics", "Content Marketing", "Paid Ads (Meta/Google)"
-    ],
-    "Power BI": [
-        "Data Sources & Import", "Power Query (ETL)", "Data Modeling",
-        "DAX Basics", "Building Reports", "Dashboards & Visuals", "Publishing & Sharing"
-    ],
-    "Cyber Security": [
-        "Networking Fundamentals", "Linux Basics", "Threats & Attack Types",
-        "Cryptography", "Ethical Hacking Intro", "Firewalls & IDS", "Security Auditing"
-    ],
-    "Data Analyst": [
-        "Excel for Data", "SQL Fundamentals", "Python (Pandas/Matplotlib)",
-        "Data Cleaning", "Exploratory Data Analysis", "Storytelling with Data", "Capstone Project"
-    ]
+    "Web Development":   ["HTML & CSS Fundamentals", "JavaScript Essentials", "Responsive Design", "React Basics", "Backend (Node/Express)", "REST APIs", "Deployment"],
+    "AI/ML":             ["Python Refresher", "NumPy & Pandas", "Data Preprocessing", "Supervised Learning", "Unsupervised Learning", "Model Evaluation", "Deep Learning Intro"],
+    "Digital Marketing": ["Marketing Fundamentals", "SEO & SEM", "Social Media Strategy", "Email Marketing", "Google Analytics", "Content Marketing", "Paid Ads"],
+    "Power BI":          ["Data Sources & Import", "Power Query (ETL)", "Data Modeling", "DAX Basics", "Building Reports", "Dashboards & Visuals", "Publishing"],
+    "Cyber Security":    ["Networking Fundamentals", "Linux Basics", "Threats & Attacks", "Cryptography", "Ethical Hacking Intro", "Firewalls & IDS", "Security Auditing"],
+    "Data Analyst":      ["Excel for Data", "SQL Fundamentals", "Python (Pandas/Matplotlib)", "Data Cleaning", "Exploratory Analysis", "Storytelling with Data", "Capstone Project"],
 }
 
-# ─── Helpers ─────────────────────────────────────────────────────────────────
-
+# ── Helpers ────────────────────────────────────────────────────────────────────
 def load_data():
-    if os.path.exists(CSV_FILE):
-        return pd.read_csv(CSV_FILE)
-    return pd.DataFrame()
+    return pd.read_csv(CSV_FILE) if os.path.exists(CSV_FILE) else pd.DataFrame()
 
-def save_to_csv(name, email, cnic, city, contact, age, gender, education, course):
-    reg_id = "EDU-" + str(uuid.uuid4())[:8].upper()
-    new_data = pd.DataFrame({
-        "ID": [reg_id], "Name": [name], "Email": [email], "CNIC": [cnic],
-        "City": [city], "Contact": [contact], "Age": [age],
-        "Gender": [gender], "Education": [education], "Course": [course]
-    })
+def save_registration(name, email, cnic, city, contact, age, gender, education, course):
+    reg_id = "REG-" + str(uuid.uuid4())[:8].upper()
+    row = pd.DataFrame([{
+        "ID": reg_id, "Name": name, "Email": email, "CNIC": cnic,
+        "City": city, "Contact": contact, "Age": age,
+        "Gender": gender, "Education": education, "Course": course
+    }])
     if os.path.exists(CSV_FILE):
-        existing = pd.read_csv(CSV_FILE)
-        pd.concat([existing, new_data], ignore_index=True).to_csv(CSV_FILE, index=False)
+        pd.concat([pd.read_csv(CSV_FILE), row], ignore_index=True).to_csv(CSV_FILE, index=False)
     else:
-        new_data.to_csv(CSV_FILE, index=False)
+        row.to_csv(CSV_FILE, index=False)
     return reg_id
 
 def is_duplicate(email, cnic):
     data = load_data()
-    if data.empty:
-        return False
-    return ((data["Email"] == email) | (data["CNIC"] == cnic)).any()
+    return not data.empty and ((data["Email"] == email) | (data["CNIC"] == cnic)).any()
 
-def validate_email(email):
-    return re.match(r"^[\w\.-]+@[\w\.-]+\.\w{2,}$", email)
+def valid_email(v):   return bool(re.match(r"^[\w\.-]+@[\w\.-]+\.\w{2,}$", v))
+def valid_cnic(v):    return bool(re.match(r"^\d{5}-\d{7}-\d$", v))
+def valid_contact(v): return bool(re.match(r"^(03\d{9}|\+923\d{9})$", v))
 
-def validate_cnic(cnic):
-    return re.match(r"^\d{5}-\d{7}-\d$", cnic)
-
-def validate_contact(contact):
-    return re.match(r"^(03\d{9}|\+923\d{9})$", contact)
-
-def plotly_style():
+def chart_style():
     return dict(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font_color="#a0aec0",
-        font_family="Sora",
+        font_color="#57534e",
+        font_family="DM Sans",
+        margin=dict(t=36, b=0, l=0, r=0)
     )
 
-# ─── Nav ─────────────────────────────────────────────────────────────────────
+PALETTE = ["#1c1917", "#44403c", "#78716c", "#a8a29e", "#d6d3d1"]
+
+# ── Nav ────────────────────────────────────────────────────────────────────────
 select = option_menu(
     menu_title=None,
-    options=["Registration", "Admin"],
-    icons=["person-fill", "shield-lock-fill"],
+    options=["Register", "Admin"],
+    icons=["person", "shield-lock"],
     orientation="horizontal",
     styles={
-        "container": {"background-color": "rgba(255,255,255,0.04)", "border-radius": "12px", "padding": "6px"},
-        "nav-link": {"font-family": "Sora, sans-serif", "color": "#a0aec0", "border-radius": "8px"},
-        "nav-link-selected": {"background": "linear-gradient(135deg,#667eea,#764ba2)", "color": "white", "font-weight": "600"},
+        "container":         {"background-color": "#ffffff", "border": "1px solid #e7e5e4", "border-radius": "10px", "padding": "4px"},
+        "nav-link":          {"font-family": "DM Sans, sans-serif", "font-size": "0.88rem", "color": "#78716c", "border-radius": "7px", "font-weight": "500"},
+        "nav-link-selected": {"background": "#1c1917", "color": "#fafaf9", "font-weight": "600"},
     }
 )
 
-# ═══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # ADMIN
-# ═══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 if select == "Admin":
 
-    # Simple session-based auth
     if "admin_auth" not in st.session_state:
         st.session_state.admin_auth = False
 
     if not st.session_state.admin_auth:
-        st.markdown("## 🔐 Admin Login")
-        pwd = st.text_input("Password", type="password", placeholder="Enter admin password")
-        if st.button("Login"):
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("## Admin Access")
+        st.caption("Enter your password to continue.")
+        pwd = st.text_input("Password", type="password", placeholder="••••••••")
+        if st.button("Continue"):
             if hashlib.sha256(pwd.encode()).hexdigest() == ADMIN_PASSWORD_HASH:
                 st.session_state.admin_auth = True
                 st.rerun()
             else:
-                st.error("Incorrect password.")
-        st.caption("Default password: `admin123` — change `ADMIN_PASSWORD_HASH` in the code.")
-    else:
-        if st.button("Logout"):
-            st.session_state.admin_auth = False
-            st.rerun()
+                st.error("Wrong password.")
+        st.caption("Default password: `admin123`")
 
-        tab1, tab2 = st.tabs(["📊 Statistics", "🗂 Data"])
+    else:
+        col_title, col_logout = st.columns([5, 1])
+        with col_title:
+            st.markdown("## Dashboard")
+        with col_logout:
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("Log out"):
+                st.session_state.admin_auth = False
+                st.rerun()
+
+        tab1, tab2 = st.tabs(["Overview", "Records"])
 
         with tab1:
-            st.markdown("## Course Registration Statistics")
             data = load_data()
             if data.empty:
                 st.info("No registrations yet.")
             else:
-                col1, col2, col3, col4 = st.columns(4)
-                col1.metric("Total Registrations", data["CNIC"].nunique())
-                col2.metric("Average Age", f"{round(data['Age'].mean())} yrs")
-                col3.metric("Male", int((data["Gender"] == "Male").sum()))
-                col4.metric("Female", int((data["Gender"] == "Female").sum()))
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Total",  data["CNIC"].nunique())
+                c2.metric("Avg Age", f"{round(data['Age'].mean())}")
+                c3.metric("Male",   int((data["Gender"] == "Male").sum()))
+                c4.metric("Female", int((data["Gender"] == "Female").sum()))
 
-                st.markdown("---")
-                c1, c2 = st.columns(2)
+                st.markdown("<br>", unsafe_allow_html=True)
+                col_a, col_b = st.columns(2)
 
-                with c1:
-                    gender_df = data["Gender"].value_counts().reset_index()
-                    fig1 = px.pie(gender_df, names="Gender", values="count",
-                                  title="Gender Distribution",
-                                  color_discrete_sequence=px.colors.sequential.Purpor)
-                    fig1.update_layout(**plotly_style())
-                    st.plotly_chart(fig1, use_container_width=True)
+                with col_a:
+                    df = data["Course"].value_counts().reset_index()
+                    fig = px.pie(df, names="Course", values="count", hole=0.5,
+                                 color_discrete_sequence=PALETTE)
+                    fig.update_layout(**chart_style(), title_text="By course", title_font_size=13)
+                    fig.update_traces(textfont_size=11)
+                    st.plotly_chart(fig, use_container_width=True)
 
-                with c2:
-                    course_df = data["Course"].value_counts().reset_index()
-                    fig2 = px.pie(course_df, names="Course", values="count",
-                                  title="Course Breakdown",
-                                  color_discrete_sequence=px.colors.sequential.Plasma)
-                    fig2.update_layout(**plotly_style())
-                    st.plotly_chart(fig2, use_container_width=True)
+                with col_b:
+                    df = data["Gender"].value_counts().reset_index()
+                    fig = px.pie(df, names="Gender", values="count", hole=0.5,
+                                 color_discrete_sequence=PALETTE)
+                    fig.update_layout(**chart_style(), title_text="By gender", title_font_size=13)
+                    fig.update_traces(textfont_size=11)
+                    st.plotly_chart(fig, use_container_width=True)
 
-                city_df = data["City"].value_counts().reset_index()
-                fig3 = px.bar(city_df, x="City", y="count", title="Registrations by City",
-                              color="count", color_continuous_scale="Purpor")
-                fig3.update_layout(**plotly_style(), showlegend=False)
-                st.plotly_chart(fig3, use_container_width=True)
+                df = data["City"].value_counts().reset_index()
+                fig = px.bar(df, x="City", y="count", color_discrete_sequence=["#44403c"])
+                fig.update_layout(**chart_style(), title_text="By city", title_font_size=13,
+                                  showlegend=False,
+                                  xaxis=dict(tickfont_size=11),
+                                  yaxis=dict(tickfont_size=11))
+                fig.update_traces(marker_line_width=0)
+                st.plotly_chart(fig, use_container_width=True)
 
-                edu_df = data["Education"].value_counts().reset_index()
-                fig4 = px.bar(edu_df, x="Education", y="count", title="Education Level",
-                              color="count", color_continuous_scale="Plasma")
-                fig4.update_layout(**plotly_style(), showlegend=False)
-                st.plotly_chart(fig4, use_container_width=True)
+                df = data["Education"].value_counts().reset_index()
+                fig = px.bar(df, x="Education", y="count", color_discrete_sequence=["#78716c"])
+                fig.update_layout(**chart_style(), title_text="By education", title_font_size=13,
+                                  showlegend=False,
+                                  xaxis=dict(tickfont_size=11),
+                                  yaxis=dict(tickfont_size=11))
+                fig.update_traces(marker_line_width=0)
+                st.plotly_chart(fig, use_container_width=True)
 
         with tab2:
-            st.markdown("## Registered Candidates")
             data = load_data()
             if data.empty:
                 st.info("No registrations yet.")
             else:
-                col_f1, col_f2 = st.columns(2)
-                with col_f1:
-                    selected_courses = st.multiselect("Filter by Course", data["Course"].unique(),
-                                                      default=list(data["Course"].unique()))
-                with col_f2:
-                    selected_cities = st.multiselect("Filter by City", data["City"].unique(),
-                                                     default=list(data["City"].unique()))
+                f1, f2 = st.columns(2)
+                with f1:
+                    sel_courses = st.multiselect("Course", data["Course"].unique(), default=list(data["Course"].unique()))
+                with f2:
+                    sel_cities = st.multiselect("City", data["City"].unique(), default=list(data["City"].unique()))
 
-                filtered = data[data["Course"].isin(selected_courses) & data["City"].isin(selected_cities)]
-                st.caption(f"Showing **{len(filtered)}** of **{len(data)}** records")
+                filtered = data[data["Course"].isin(sel_courses) & data["City"].isin(sel_cities)]
+                st.caption(f"{len(filtered)} of {len(data)} records")
                 st.dataframe(filtered, use_container_width=True, hide_index=True)
+                st.download_button("Download CSV", filtered.to_csv(index=False), "registrations.csv", "text/csv")
 
-                st.download_button(
-                    label="⬇ Download as CSV",
-                    data=filtered.to_csv(index=False),
-                    file_name="registrations.csv",
-                    mime="text/csv"
-                )
-
-# ═══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # USER
-# ═══════════════════════════════════════════════════════════════════════
-elif select == "Registration":
-    tab1, tab2 = st.tabs(["📋 Register", "🪪 My Card & Outline"])
+# ══════════════════════════════════════════════════════════════════════════════
+elif select == "Register":
+    tab1, tab2 = st.tabs(["Registration", "My Card"])
 
     with tab1:
-        st.markdown("## 🎓 Course Registration")
-        st.caption("Fill in the form below to register for a course.")
+        st.markdown("## Registration")
+        st.caption("All fields are required.")
+        st.markdown("<br>", unsafe_allow_html=True)
 
-        with st.form("reg_form", clear_on_submit=False):
+        with st.form("reg_form"):
             c1, c2 = st.columns(2)
             with c1:
-                name    = st.text_input("Full Name *", placeholder="Muhammad Ali")
-                email   = st.text_input("Email *", placeholder="ali@example.com")
-                cnic    = st.text_input("CNIC *", placeholder="42101-1234567-1")
-                city    = st.selectbox("City *", CITIES)
+                name      = st.text_input("Full Name", placeholder="Muhammad Ali")
+                email     = st.text_input("Email", placeholder="ali@example.com")
+                cnic      = st.text_input("CNIC", placeholder="42101-1234567-1")
+                city      = st.selectbox("City", CITIES)
             with c2:
-                contact = st.text_input("Contact *", placeholder="03001234567")
-                age     = st.number_input("Age *", min_value=18, max_value=60, value=22)
-                gender  = st.selectbox("Gender *", GENDERS)
-                education = st.selectbox("Education *", EDUCATIONS)
+                contact   = st.text_input("Contact", placeholder="03001234567")
+                age       = st.number_input("Age", min_value=18, max_value=60, value=22)
+                gender    = st.selectbox("Gender", GENDERS)
+                education = st.selectbox("Education", EDUCATIONS)
 
-            course = st.selectbox("Course *", COURSES)
-            submitted = st.form_submit_button("Register Now →")
+            course    = st.selectbox("Course", COURSES)
+            submitted = st.form_submit_button("Submit Registration")
 
         if submitted:
             errors = []
-            if not name.strip():             errors.append("Name is required.")
-            if not validate_email(email):    errors.append("Invalid email format.")
-            if not validate_cnic(cnic):      errors.append("CNIC must be in format `42101-1234567-1`.")
-            if not validate_contact(contact):errors.append("Contact must be a valid Pakistani number (e.g. 03001234567).")
-            if not city:                     errors.append("City is required.")
+            if not name.strip():           errors.append("Name is required.")
+            if not valid_email(email):     errors.append("Enter a valid email address.")
+            if not valid_cnic(cnic):       errors.append("CNIC format: 42101-1234567-1")
+            if not valid_contact(contact): errors.append("Enter a valid Pakistani number (03xxxxxxxxx).")
 
             if errors:
                 for e in errors:
                     st.error(e)
             elif is_duplicate(email, cnic):
-                st.warning("⚠️ A registration with this Email or CNIC already exists.")
+                st.warning("This email or CNIC is already registered.")
             else:
-                reg_id = save_to_csv(name, email, cnic, city, contact, age, gender, education, course)
-                st.success(f"✅ Registration successful! Your ID: **{reg_id}**")
+                reg_id = save_registration(name, email, cnic, city, contact, age, gender, education, course)
+                st.success(f"Registered successfully. Your ID: **{reg_id}**")
                 st.balloons()
-                st.info("Save your ID — you'll need it to retrieve your card and course outline.")
+                st.caption("Save this ID — you'll need it to retrieve your card.")
 
     with tab2:
-        st.markdown("## 🪪 Retrieve Your Card & Outline")
+        st.markdown("## Your Registration Card")
+        st.caption("Enter the details you registered with.")
+        st.markdown("<br>", unsafe_allow_html=True)
+
         with st.form("lookup_form"):
-            l_email = st.text_input("Registered Email *", placeholder="ali@example.com")
-            l_cnic  = st.text_input("CNIC *", placeholder="42101-1234567-1")
-            lookup  = st.form_submit_button("Retrieve →")
+            l_email = st.text_input("Email", placeholder="ali@example.com")
+            l_cnic  = st.text_input("CNIC", placeholder="42101-1234567-1")
+            lookup  = st.form_submit_button("Retrieve")
 
         if lookup:
             data = load_data()
             if data.empty:
-                st.info("No registrations found yet.")
+                st.info("No registrations found.")
             else:
                 match = data[(data["Email"] == l_email.strip()) & (data["CNIC"] == l_cnic.strip())]
                 if match.empty:
-                    st.error("No registration found for the provided Email and CNIC combination.")
+                    st.error("No record found for this email and CNIC combination.")
                 else:
-                    row = match.iloc[0]
-                    # ID Card
-                    reg_id = row.get("ID", "EDU-LEGACY")
+                    row    = match.iloc[0]
+                    reg_id = row.get("ID", "—")
+
                     st.markdown(f"""
                     <div class="id-card">
-                        <h3>🎓 {row['Name']}</h3>
-                        <div class="id-number">{reg_id}</div>
-                        <div class="meta">
-                            📚 {row['Course']} &nbsp;|&nbsp; 🏙 {row['City']} &nbsp;|&nbsp;
-                            🎓 {row['Education']} &nbsp;|&nbsp; 📅 Age {row['Age']}
+                        <div class="id-card-name">{row['Name']}</div>
+                        <div class="id-card-id">{reg_id}</div>
+                        <div class="id-card-meta">
+                            <span class="id-card-badge">{row['Course']}</span>
+                            <span class="id-card-badge">{row['City']}</span>
+                            <span class="id-card-badge">{row['Education']}</span>
+                            <span class="id-card-badge">{row['Gender']}</span>
+                            <span class="id-card-badge">Age {row['Age']}</span>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # Course Outline
-                    course = row["Course"]
-                    outline = COURSE_OUTLINES.get(course, [])
+                    outline = COURSE_OUTLINES.get(row["Course"], [])
                     if outline:
-                        st.markdown(f"### 📖 {course} — Course Outline")
-                        pills_html = "".join(
-                            f'<span class="topic-pill">✦ {topic}</span>'
-                            for topic in outline
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        st.markdown(f'<div class="section-label">{row["Course"]} — Course Outline</div>', unsafe_allow_html=True)
+                        items = "".join(
+                            f'<div class="outline-item"><span class="outline-num">0{i+1}</span>{topic}</div>'
+                            for i, topic in enumerate(outline)
                         )
-                        st.markdown(f"<div style='line-height:2.2'>{pills_html}</div>", unsafe_allow_html=True)
+                        st.markdown(f'<div class="outline-grid">{items}</div>', unsafe_allow_html=True)
